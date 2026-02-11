@@ -6,7 +6,6 @@ const bodyParser = require('body-parser');
 const app = express();
 app.use(bodyParser.json());
 
-// إنشاء عميل واتساب
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
@@ -23,31 +22,25 @@ const client = new Client({
     }
 });
 
-// متغير لتتبع حالة الاتصال
 let isReady = false;
 
-// عند توليد QR Code
 client.on('qr', (qr) => {
     console.log('📱 امسح QR Code التالي بواتساب:');
     qrcode.generate(qr, { small: true });
 });
 
-// عند الاتصال بنجاح
 client.on('ready', () => {
     console.log('✅ تم الاتصال بواتساب بنجاح!');
     isReady = true;
 });
 
-// عند الانقطاع
 client.on('disconnected', (reason) => {
     console.log('❌ تم قطع الاتصال:', reason);
     isReady = false;
 });
 
-// بدء تشغيل العميل
 client.initialize();
 
-// API endpoint للتحقق من الحالة
 app.get('/', (req, res) => {
     res.json({
         status: 'online',
@@ -56,12 +49,10 @@ app.get('/', (req, res) => {
     });
 });
 
-// API endpoint لإرسال رسالة
 app.post('/send-message', async (req, res) => {
     try {
         const { phone, message } = req.body;
 
-        // التحقق من البيانات
         if (!phone || !message) {
             return res.status(400).json({
                 success: false,
@@ -69,7 +60,6 @@ app.post('/send-message', async (req, res) => {
             });
         }
 
-        // التحقق من جاهزية واتساب
         if (!isReady) {
             return res.status(503).json({
                 success: false,
@@ -77,21 +67,16 @@ app.post('/send-message', async (req, res) => {
             });
         }
 
-        // تنسيق رقم الهاتف
         let formattedPhone = phone.replace(/[^0-9]/g, '');
         
-        // إزالة + أو 00 من البداية
         if (formattedPhone.startsWith('00')) {
             formattedPhone = formattedPhone.substring(2);
         }
         
-        // إضافة @c.us في النهاية (صيغة واتساب)
         const chatId = formattedPhone + '@c.us';
-
-        // إرسال الرسالة
         await client.sendMessage(chatId, message);
 
-        console.log(`✅ تم إرسال رسالة إلى: ${phone}`);
+        console.log('✅ تم إرسال رسالة إلى: ' + phone);
 
         res.json({
             success: true,
@@ -108,12 +93,8 @@ app.post('/send-message', async (req, res) => {
     }
 });
 
-// تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 السيرفر يعمل على المنفذ ${PORT}`);
-    console.log(`📡 API endpoint: http://localhost:${PORT}/send-message`);
+    console.log('🚀 السيرفر يعمل على المنفذ ' + PORT);
+    console.log('📡 API endpoint: http://localhost:' + PORT + '/send-message');
 });
-
-```
-https://whatsapp-bot-n8n.onrender.com/send-message
